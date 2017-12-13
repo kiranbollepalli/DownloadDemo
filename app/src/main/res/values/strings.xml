@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">DownloadDemo</string>
+  <string name="hint_enter_url">Enter url</string>
+  <string name="button_download">Download</string>
+</resources>
