@@ -10,19 +10,18 @@ public class DownloadableItem {
   private int id;
   private long downloadId;
   private String title;
-  private  String url;
+  private String url;
   private int downloadedPercentage;
   private int downloadStatus;
 
-  public DownloadableItem(){
+  public DownloadableItem() {
 
   }
 
-  public DownloadableItem(String url){
+  public DownloadableItem(String url) {
     id = counter++;
     this.url = url;
     this.title = url; //TODO: Need to change later.
-
   }
 
   public int getId() {

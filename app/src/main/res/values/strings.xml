@@ -1,5 +1,17 @@
 <resources>
   <string name="app_name">DownloadDemo</string>
+
   <string name="hint_enter_url">Enter url</string>
+
   <string name="button_download">Download</string>
+
+  <string name="error_mandatory_field">Field cannot be empty</string>
+  <string name="error_invalid_url">Invalid url</string>
+  <string name="error_download_inprogress">Please wait. Another Download is in progress.</string>
+
+
+  <string name="formatted_download_update"> %1$d %%</string>
+  <string name="label_download_progress">Download Progress</string>
+  <string name="error_storrage_permission_denied">Can\'t Download file.Storage Permission Denied.</string>
+
 </resources>

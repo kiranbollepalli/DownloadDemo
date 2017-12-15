@@ -3,7 +3,7 @@ package com.medtronics.mdownloader;
 import com.medtronics.mdownloader.model.DownloadableItem;
 
 /**
- * Created by kiran on 12/14/17.
+ * This is Callback interface, provides information about download status and progress.
  */
 
 public interface DownloadCallback {

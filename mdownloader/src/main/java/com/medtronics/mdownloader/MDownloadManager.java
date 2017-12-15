@@ -4,11 +4,14 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.medtronics.mdownloader.model.DownloadStatus;
 import com.medtronics.mdownloader.model.DownloadableItem;
+import com.medtronics.mdownloader.util.Constants;
+import com.medtronics.mdownloader.util.Utils;
 
 /**
  * Created by kiran on 12/14/17.
@@ -18,10 +21,6 @@ public class MDownloadManager {
 
   private DownloadManager mManager;
   private static volatile MDownloadManager sDownloadManager;
-
-  public static final long INVALID_DOWNLOAD_ID = -1;
-  public static final int DOWNLOAD_COMPLETE_PERCENTAGE = 100;
-  public static final long PROGRESS_CHECK_FREQUENCY = 100; // ONE MINUTE
 
   private MDownloadManager() {
 
@@ -42,21 +41,42 @@ public class MDownloadManager {
     mManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
   }
 
-  public long enqueueDownload(String downloadUrl) {
+  /**
+   * Method enqueues Downloadable item.
+   *
+   * @param item {@link DownloadableItem} Downloadable item info.
+   * @param callback {@link DownloadCallback} for updates on download progress.
+   * @return downloadId. If url is null it will return -1;
+   */
+  public long enqueueDownload(final DownloadableItem item, final DownloadCallback callback) {
 
-    if (downloadUrl == null) {
-      return INVALID_DOWNLOAD_ID;
+    if (item.getUrl() == null) {
+      return Constants.INVALID_DOWNLOAD_ID;
     }
-    Uri uri = Uri.parse(downloadUrl);
+    Uri uri = Uri.parse(item.getUrl());
     DownloadManager.Request downloadRequest = new DownloadManager.Request(uri);
-    return mManager.enqueue(downloadRequest);
+    downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+        Utils.getFilenameFromURL(item.getUrl()));
+
+    long downloadId = mManager.enqueue(downloadRequest);
+    item.setDownloadId(downloadId);
+    item.setDownloadStatus(DownloadManager.STATUS_PENDING);
+    if (callback != null) callback.onDownloadStarted();
+    getDownloadPercents(item, callback);
+    return downloadId;
   }
 
-  public void getDownloadPercents(final DownloadableItem item, final DownloadCallback callback) {
+  /**
+   * Method checks download progress.
+   *
+   * @param item {@link DownloadableItem} Downloadable item info.
+   * @param callback {@link DownloadCallback} for updates on download progress.
+   */
+
+  private void getDownloadPercents(final DownloadableItem item, final DownloadCallback callback) {
     DownloadStatus status = getDownloadResult(item.getDownloadId());
-    if (status == null) {
-      return;
-    }
+
+    if (status == null) return;
 
     item.setDownloadedPercentage(status.getPercent());
     item.setDownloadStatus(status.getDownloadStatus());
@@ -64,28 +84,33 @@ public class MDownloadManager {
     switch (item.getDownloadStatus()) {
 
       case DownloadManager.STATUS_FAILED:
-        if (callback!=null) callback.onDownloadFailed();
+        if (callback != null) callback.onDownloadFailed();
         break;
 
       case DownloadManager.STATUS_PAUSED:
       case DownloadManager.STATUS_PENDING:
       case DownloadManager.STATUS_RUNNING:
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+        new Handler().postDelayed(new Runnable() {
           @Override public void run() {
-            if (callback!=null) callback.onDownloadProgress(item);
+            if (callback != null) callback.onDownloadProgress(item);
             getDownloadPercents(item, callback);
-            Log.i( "MANAGER", "download progress : " + item.getDownloadedPercentage());
+            Log.i("MANAGER", "download progress : " + item.getDownloadedPercentage());
           }
-        }, PROGRESS_CHECK_FREQUENCY);
+        }, Constants.PROGRESS_CHECK_FREQUENCY);
         break;
 
       case DownloadManager.STATUS_SUCCESSFUL:
-        if (callback!=null) callback.onDownloadCompleted(item);
+        if (callback != null) callback.onDownloadCompleted(item);
 
         break;
     }
   }
+
+  /**
+   * Get progress and status of downloadable item by id.
+   *
+   * @return {@link DownloadStatus}
+   */
 
   private DownloadStatus getDownloadResult(long downloadId) {
 
@@ -106,7 +131,8 @@ public class MDownloadManager {
           cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
       float totalBytes =
           cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
-      int percentage = (int) ((downloadedBytes / totalBytes) * DOWNLOAD_COMPLETE_PERCENTAGE);
+      int percentage =
+          (int) ((downloadedBytes / totalBytes) * Constants.DOWNLOAD_COMPLETE_PERCENTAGE);
       status.setPercent(percentage);
 
       //COMMENT: Get the download status
